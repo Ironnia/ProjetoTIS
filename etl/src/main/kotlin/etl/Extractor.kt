@@ -1,6 +1,8 @@
 package etl
 
 import com.opencsv.CSVReader
+import org.apache.poi.ss.usermodel.DataFormatter
+import org.apache.poi.ss.usermodel.WorkbookFactory
 import java.io.File
 import java.io.FileReader
 
@@ -39,6 +41,37 @@ class CsvExtractor {
             result.add(map)
         }
 
+        return result
+    }
+}
+
+class XlsxExtractor {
+
+    fun extract(filePath: String): List<Map<String, String>> {
+        val file = File(filePath)
+        if (!file.exists()) return emptyList()
+
+        // WorkbookFactory detecta automaticamente o formato do Excel
+        val workbook = WorkbookFactory.create(file)
+        val sheet = workbook.getSheetAt(0)
+        val formatter = DataFormatter()
+
+        val result = mutableListOf<Map<String, String>>()
+        val headerRow = sheet.getRow(0) ?: return emptyList()
+        val headers = headerRow.map { formatter.formatCellValue(it).trim() }
+
+        for (i in 1..sheet.lastRowNum) {
+            val row = sheet.getRow(i) ?: continue
+            val map = mutableMapOf<String, String>()
+
+            for (j in headers.indices) {
+                val cell = row.getCell(j)
+                map[headers[j]] = formatter.formatCellValue(cell).trim()
+            }
+            result.add(map)
+        }
+
+        workbook.close()
         return result
     }
 }
